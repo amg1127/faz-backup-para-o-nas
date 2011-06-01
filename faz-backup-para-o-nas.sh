@@ -11,6 +11,7 @@ export maxbackups=7
 export anomesdia="`date '+%Y-%m-%d'`"
 export arqbloqueio=".lockfile"
 export maska='[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+set -o pipefail
 
 exibe () {
     echo " [`date '+%Y-%m-%d %H:%M:%S'`] $@ "
@@ -42,16 +43,12 @@ rodasuc () {
     fi
 }
 
-tempn () {
-    echo ".${1}.tmp"
-}
-
 busca_remoto () {
     rodasuc find "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d "$@"
 }
 
 busca_temporarios () {
-    busca_remoto -iname "`tempn \"${maska}\"`"
+    busca_remoto -iname ".${maska}.tmp"
 }
 
 busca_definitivos () {
@@ -78,7 +75,7 @@ fi
 
 echo ' '
 exibe '(2) Verificando e removendo pastas de backup incompletas...'
-if [ "`( echo \"${caminhoremoto}/${anomesdia}\" ; busca_definitivos ) | sort -r | head --lines=1`" != "${caminhoremoto}/${anomesdia}" ]; then
+if [ "`( echo \"${caminhoremoto}/.${anomesdia}.tmp\" ; ( busca_definitivos | sed \"s/\/\(${maska}\)\$/\/.\1.tmp/\" ) ; busca_temporarios ) | sort -r | head --lines=1`" != "${caminhoremoto}/.${anomesdia}.tmp" ]; then
     morre '???? Existe um backup que veio do futuro? ????'
 fi
 if roda test -d "${caminhoremoto}/${anomesdia}"; then
@@ -88,19 +85,22 @@ if [ "`find -L "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d | egrep '[[:sp
     morre 'Nomes de symlinks invalidos aqui na origem!'
 fi
 
-busca_temporarios | while read linha; do
-    if [ "`basename \"${linha}\"`" != "`tempn ${anomesdia}`" ]; then
-        exibe "  + Removendo '${linha}'..."
-        roda rm -Rf "${linha}"
-    fi
-done
-
-camremot="${caminhoremoto}/`tempn ${anomesdia}`"
+camremot="${caminhoremoto}/.${anomesdia}.tmp"
 if ! roda test -d "${camremot}"; then
-    ultimapa="`busca_definitivos | sort -r | head --lines=1`"
+    ultimapa="`( ( busca_definitivos | sed \"s/\/\(${maska}\)\$/\/.\1.tmp/\" ) ; busca_temporarios ) | sort -r | head --lines=1`"
     if [ "x${ultimapa}" != "x" ]; then
-        exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
-        rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
+        if roda test -d "${ultimapa}"; then
+            exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
+            rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
+        else
+            ultimapa="`echo \"${ultimapa}\" | sed \"s/\/\.\(${maska}\)\.tmp\$/\/\1/\"`"
+            if roda test -d "${ultimapa}"; then
+                exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
+                rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
+            else
+                morre '???? Inconsistencia feia aqui... ????'
+            fi
+        fi
     else
         rodasuc mkdir -pv -m 700 "${camremot}"
     fi
@@ -130,6 +130,13 @@ busca_definitivos | sort -r | cat -n | while read posi pname; do
         exibe "  + Removendo '${pname}'..."
         roda rm -Rf "${pname}"
     fi
+done
+
+echo ' '
+exibe '(5) Removendo pastas de backup temporarias...'
+busca_temporarios | while read linha; do
+    exibe "  + Removendo '${linha}'..."
+    roda rm -Rf "${linha}"
 done
 
 echo ' '
