@@ -64,7 +64,6 @@ if [ -f "${caminhoremoto}/${arqbloqueio}" ]; then
     echo 'Outra instancia deste programa parece estar em execucao. Abortando...'
     exit 1
 fi
-touch "${caminhoremoto}/${arqbloqueio}"
 
 exibe '(1) Testando autenticacao de SSH...'
 exibe 'Aviso: O ideal eh que o SSH faca autenticacao sem a necessidade de digitar senha.'
@@ -72,6 +71,8 @@ exibe 'Se a digitacao de senha foi necessaria, interrompa este script e use o co
 if ! roda mkdir -p -m 700 "${caminhoremoto}"; then
     morre 'Impossivel autenticar-se no servidor de SSH!'
 fi
+
+touch "${caminhoremoto}/${arqbloqueio}"
 
 echo ' '
 exibe '(2) Verificando e removendo pastas de backup incompletas...'
@@ -116,7 +117,7 @@ find -L "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d | while read localo; 
     exibe "  + rsync '${localo}'"
     logofile="${localo}-transfer.log"
     cat /dev/null > "${logofile}"
-    if ! ( [ "x${bnlo}" != "x" ] && rsync -e ssh -r -l -H -p -E -g -t --delete-before --timeout=300 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" "${localo}/" "${hostremoto}:${camremot}/${bnlo}/" ); then
+    if ! ( [ "x${bnlo}" != "x" ] && rsync -v -e ssh -r -l -H -p -E -g -t --delete-before --timeout=300 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" "${localo}/" "${hostremoto}:${camremot}/${bnlo}/" ); then
         morre "Falha ao sincronizar caminho '${localo}'." < /dev/null
     fi
 done
