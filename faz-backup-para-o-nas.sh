@@ -117,7 +117,7 @@ find -L "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d | while read localo; 
     exibe "  + rsync '${localo}'"
     logofile="${localo}-transfer.log"
     cat /dev/null > "${logofile}"
-    if ! ( [ "x${bnlo}" != "x" ] && rsync -v -e ssh -r -l -H -p -E -g -t --delete-before --timeout=300 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" "${localo}/" "${hostremoto}:${camremot}/${bnlo}/" ); then
+    if ! ( [ "x${bnlo}" != "x" ] && rsync -e ssh -r -l -H -p -E -g -t --delete-before --timeout=300 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" "${localo}/" "${hostremoto}:${camremot}/${bnlo}/" ); then
         morre "Falha ao sincronizar caminho '${localo}'." < /dev/null
     fi
 done
