@@ -33,7 +33,7 @@ morre () {
 }
 
 roda () {
-    ssh -n -- "${hostremoto}" "$@"
+    ssh -o ControlPath=none -n -- "${hostremoto}" "$@"
 }
 
 rodasuc () {
@@ -117,7 +117,14 @@ find -L "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d | while read localo; 
     exibe "  + rsync '${localo}'"
     logofile="${localo}-transfer.log"
     cat /dev/null > "${logofile}"
-    if ! ( [ "x${bnlo}" != "x" ] && rsync -e ssh -r -l -H -p -E -g -t --delete-before --timeout=300 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" "${localo}/" "${hostremoto}:${camremot}/${bnlo}/" ); then
+    rsyncmore=""
+    for inctest in 'in' 'ex'; do
+        patfile="${localo}-${inctest}clude.patterns"
+        if [ -f "${patfile}" ]; then
+            rsyncmore="${rsyncmore} --${inctest}clude-from=${patfile}"
+        fi
+    done
+    if ! ( [ "x${bnlo}" != "x" ] && rsync -e 'ssh -o ControlPath=none' -r -l -H -p -E -g -t --delete-before --timeout=300 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/" ); then
         morre "Falha ao sincronizar caminho '${localo}'." < /dev/null
     fi
 done
