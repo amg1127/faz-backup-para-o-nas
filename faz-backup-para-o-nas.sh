@@ -12,6 +12,7 @@ export anomesdia="`date '+%Y-%m-%d'`"
 export arqbloqueio=".lockfile"
 export maska='[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
 set -o pipefail
+sleep 10
 
 exibe () {
     echo " [`date '+%Y-%m-%d %H:%M:%S'`] $@ "
