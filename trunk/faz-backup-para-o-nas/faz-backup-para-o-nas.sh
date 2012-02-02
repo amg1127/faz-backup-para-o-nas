@@ -126,7 +126,7 @@ find -L "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d | while read localo; 
         fi
     done
     checkfile="${localo}-lastchecksumtimestamp"
-    rstamp='-c'
+    rstamp='-c --delete --delete-after --delete-excluded'
     if [ -f "${checkfile}" ]; then
         if ! [ $((`date +%s`-604800)) -ge "`stat -c '%Y' \"${checkfile}\"`" ]; then
             rstamp=''
