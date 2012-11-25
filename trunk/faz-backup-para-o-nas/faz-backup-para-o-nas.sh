@@ -3,6 +3,7 @@
 # Script para fazer backup dos dados que estao no computador novo para o computador velho. Para isso, usa "rsync" sobre "SSH"...
 # CUIDADO: nao usar nomes de pasta com espaco!!!
 export hostremoto='amg1127-nas'
+export caminholocal='/home/amg1127/backups'
 export caminhoremoto='/home/amg1127/backups'
 export maxbackups=7
 
@@ -23,7 +24,7 @@ sai () {
     echo ' '
     echo ' **** Pressione ENTER para continuar... ****'
     read DUMMY
-    rm -f "${caminhoremoto}/${arqbloqueio}"
+    rm -f "${caminholocal}/${arqbloqueio}"
     exit $codsaida
 }
 
@@ -61,7 +62,7 @@ if [ "x${SSH_AGENT_PID}" == "x" ]; then
     exec ssh-agent $0 "$@"
 fi
 
-if [ -f "${caminhoremoto}/${arqbloqueio}" ]; then
+if [ -f "${caminholocal}/${arqbloqueio}" ]; then
     echo 'Outra instancia deste programa parece estar em execucao. Abortando...'
     exit 1
 fi
@@ -73,7 +74,7 @@ if ! roda mkdir -p -m 700 "${caminhoremoto}"; then
     morre 'Impossivel autenticar-se no servidor de SSH!'
 fi
 
-touch "${caminhoremoto}/${arqbloqueio}"
+touch "${caminholocal}/${arqbloqueio}"
 
 echo ' '
 exibe '(2) Verificando e removendo pastas de backup incompletas...'
@@ -83,7 +84,7 @@ fi
 if roda test -d "${caminhoremoto}/${anomesdia}"; then
     morre 'Ja foi feito backup hoje!'
 fi
-if [ "`find -L "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d | egrep '[[:space:]]' | wc --lines`" -gt 0 ]; then
+if [ "`find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | egrep '[[:space:]]' | wc --lines`" -gt 0 ]; then
     morre 'Nomes de symlinks invalidos aqui na origem!'
 fi
 
@@ -113,7 +114,7 @@ fi
 
 echo ' '
 exibe '(3) Executando chamadas de "rsync" para fazer o backup...'
-find -L "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d | while read localo; do
+find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; do
     bnlo="`basename \"${localo}\"`"
     exibe "  + rsync '${localo}'"
     logofile="${localo}-transfer.log"
@@ -142,6 +143,11 @@ find -L "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d | while read localo; 
 done
 [ "$?" -eq 0 ] || morre 'Abortando...'
 rodasuc mv -v "${camremot}" "${caminhoremoto}/${anomesdia}"
+if roda test -e "${caminhoremoto}/latest"; then
+    rodasuc test -h "${caminhoremoto}/latest"
+fi
+rodasuc rm -f "${caminhoremoto}/latest"
+rodasuc ln -sv "${anomesdia}" "${caminhoremoto}/latest"
 
 echo ' '
 exibe '(4) Removendo pastas de backup antigas...'
