@@ -133,7 +133,7 @@ find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; d
             rstamp=''
         fi
     fi
-    if [ "x${bnlo}" != "x" ] && rsync -e 'ssh -o ControlPath=none' ${rstamp} -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"; then
+    if [ "x${bnlo}" != "x" ] && rsync -e 'ssh -o ControlPath=none' ${rstamp} -z -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"; then
         if [ "x${rstamp}" == "x-c" ]; then
             touch "${checkfile}"
         fi
