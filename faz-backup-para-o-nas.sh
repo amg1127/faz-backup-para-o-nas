@@ -2,7 +2,7 @@
 
 # Script para fazer backup dos dados que estao no computador novo para o computador velho. Para isso, usa "rsync" sobre "SSH"...
 # CUIDADO: nao usar nomes de pasta com espaco!!!
-export hostremoto='amg1127-nas'
+export hostremoto='amg1127-sala'
 export caminholocal='/home/amg1127/backups'
 export caminhoremoto='/home/amg1127/backups'
 export maxbackups=7
