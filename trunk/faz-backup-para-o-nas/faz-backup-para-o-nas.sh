@@ -74,7 +74,7 @@ if ! roda mkdir -p -m 700 "${caminhoremoto}"; then
     morre 'Impossivel autenticar-se no servidor de SSH!'
 fi
 
-touch "${caminholocal}/${arqbloqueio}"
+echo $$ > "${caminholocal}/${arqbloqueio}"
 
 echo ' '
 exibe '(2) Verificando e removendo pastas de backup incompletas...'
