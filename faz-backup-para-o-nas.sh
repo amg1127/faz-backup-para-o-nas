@@ -82,7 +82,7 @@ if [ "`( echo \"${caminhoremoto}/.${anomesdia}.tmp\" ; ( busca_definitivos | sed
     morre '???? Existe um backup que veio do futuro? ????'
 fi
 if roda test -d "${caminhoremoto}/${anomesdia}"; then
-    morre 'Ja foi feito backup hoje!'
+    exibe 'Aviso: Ja foi feito backup hoje! Ele sera sobrescrito...'
 fi
 if [ "`find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | egrep '[[:space:]]' | wc --lines`" -gt 0 ]; then
     morre 'Nomes de symlinks invalidos aqui na origem!'
@@ -98,8 +98,12 @@ if ! roda test -d "${camremot}"; then
         else
             ultimapa="`echo \"${ultimapa}\" | sed \"s/\/\.\(${maska}\)\.tmp\$/\/\1/\"`"
             if roda test -d "${ultimapa}"; then
-                exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
-                rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
+                if [ "`basename \"${ultimapa}\"`" == "${anomesdia}" ]; then
+                    rodasuc mv -v "${ultimapa}" "${camremot}"
+                else
+                    exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
+                    rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
+                fi
             else
                 morre '???? Inconsistencia feia aqui... ????'
             fi
