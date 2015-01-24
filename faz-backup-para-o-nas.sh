@@ -13,7 +13,7 @@ export anomesdia="`date '+%Y-%m-%d'`"
 export arqbloqueio=".lockfile"
 export maska='[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
 set -o pipefail
-sleep 10
+test "x${FAST}" != "x" || sleep 10
 
 exibe () {
     echo " [`date '+%Y-%m-%d %H:%M:%S'`] $@ "
@@ -82,7 +82,11 @@ if [ "`( echo \"${caminhoremoto}/.${anomesdia}.tmp\" ; ( busca_definitivos | sed
     morre '???? Existe um backup que veio do futuro? ????'
 fi
 if roda test -d "${caminhoremoto}/${anomesdia}"; then
-    exibe 'Aviso: Ja foi feito backup hoje! Ele sera sobrescrito...'
+    if [ "x${FAST}" != "x" ]; then
+        exibe 'Aviso: Ja foi feito backup hoje! Ele sera sobrescrito...'
+    else
+        morre 'Ja foi feito backup hoje!'
+    fi
 fi
 if [ "`find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | egrep '[[:space:]]' | wc --lines`" -gt 0 ]; then
     morre 'Nomes de symlinks invalidos aqui na origem!'
