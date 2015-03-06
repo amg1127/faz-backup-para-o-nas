@@ -132,7 +132,15 @@ find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; d
             resultado='1'
         fi
     fi
+    true
     if [ "${resultado}" -eq 0 ]; then
+        runscript="${localo}-prereq"
+        if [ -x "${runscript}" -a -f "${runscript}" ]; then
+            exibe "  + prereq '${localo}'" < /dev/null
+            if ! "${runscript}" "${resultado}" < /dev/null ; then
+                morre "Falha ao executar script de pre-requisito para sincronizacao do caminho '${localo}'." < /dev/null
+            fi
+        fi
         bnlo="`basename \"${localo}\"`"
         exibe "  + rsync '${localo}'"
         logofile="${localo}-transfer.log"
