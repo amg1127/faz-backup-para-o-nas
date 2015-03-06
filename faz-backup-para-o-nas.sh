@@ -124,45 +124,49 @@ echo ' '
 exibe '(3) Executando chamadas de "rsync" para fazer o backup...'
 find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; do
     runscript="${localo}-prerun"
+    resultado='0'
     if [ -x "${runscript}" -a -f "${runscript}" ]; then
         exibe "  + prerun '${localo}'" < /dev/null
         if ! "${runscript}" < /dev/null ; then
-            morre "Falha ao executar script de pre-execucao para sincronizacao do caminho '${localo}'." < /dev/null
-        fi
-    fi
-    bnlo="`basename \"${localo}\"`"
-    exibe "  + rsync '${localo}'"
-    logofile="${localo}-transfer.log"
-    cat /dev/null > "${logofile}"
-    rsyncmore=""
-    for inctest in 'in' 'ex'; do
-        patfile="${localo}-${inctest}clude.patterns"
-        if [ -f "${patfile}" ]; then
-            rsyncmore="${rsyncmore} --${inctest}clude-from=${patfile}"
-        fi
-    done
-    checkfile="${localo}-lastchecksumtimestamp"
-    rstamp='-c'
-    if [ -f "${checkfile}" ]; then
-        if ! [ $((`date +%s`-604800)) -ge "`stat -c '%Y' \"${checkfile}\"`" ]; then
-            rstamp=''
-        fi
-    fi
-    [ "x${bnlo}" != "x" ] && rsync -e 'ssh -o ControlPath=none' ${rstamp} -z --new-compress -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"
-    resultado="$?"
-    runscript="${localo}-postrun"
-    if [ -x "${runscript}" -a -f "${runscript}" ]; then
-        exibe "  + postrun '${localo}'" < /dev/null
-        if ! "${runscript}" "${resultado}" < /dev/null ; then
-            exibe "Aviso: Falha ao executar script de pos-execucao para sincronizacao do caminho '${localo}'." < /dev/null
+            exibe "Aviso: Falha ao executar script de pre-execucao para sincronizacao do caminho '${localo}'. Pulando backup..." < /dev/null
+            resultado='1'
         fi
     fi
     if [ "${resultado}" -eq 0 ]; then
-        if [ "x${rstamp}" == "x-c" ]; then
-            touch "${checkfile}"
+        bnlo="`basename \"${localo}\"`"
+        exibe "  + rsync '${localo}'"
+        logofile="${localo}-transfer.log"
+        cat /dev/null > "${logofile}"
+        rsyncmore=""
+        for inctest in 'in' 'ex'; do
+            patfile="${localo}-${inctest}clude.patterns"
+            if [ -f "${patfile}" ]; then
+                rsyncmore="${rsyncmore} --${inctest}clude-from=${patfile}"
+            fi
+        done
+        checkfile="${localo}-lastchecksumtimestamp"
+        rstamp='-c'
+        if [ -f "${checkfile}" ]; then
+            if ! [ $((`date +%s`-2592000)) -ge "`stat -c '%Y' \"${checkfile}\"`" ]; then
+                rstamp=''
+            fi
         fi
-    else
-        morre "Falha ao sincronizar caminho '${localo}'." < /dev/null
+        [ "x${bnlo}" != "x" ] && rsync -e 'ssh -o ControlPath=none' ${rstamp} -z --new-compress -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"
+        resultado="$?"
+        runscript="${localo}-postrun"
+        if [ -x "${runscript}" -a -f "${runscript}" ]; then
+            exibe "  + postrun '${localo}'" < /dev/null
+            if ! "${runscript}" "${resultado}" < /dev/null ; then
+                exibe "Aviso: Falha ao executar script de pos-execucao para sincronizacao do caminho '${localo}'." < /dev/null
+            fi
+        fi
+        if [ "${resultado}" -eq 0 ]; then
+            if [ "x${rstamp}" == "x-c" ]; then
+                touch "${checkfile}"
+            fi
+        else
+            morre "Falha ao sincronizar caminho '${localo}'." < /dev/null
+        fi
     fi
 done
 [ "$?" -eq 0 ] || morre 'Abortando...'
