@@ -21,9 +21,11 @@ exibe () {
 
 sai () {
     codsaida="$1"
-    echo ' '
-    echo ' **** Pressione ENTER para continuar... ****'
-    read DUMMY
+    if ! [ "x${FAST}" != "x" -a "${codsaida}" -eq 0 ]; then
+        echo ' '
+        echo ' **** Pressione ENTER para continuar... ****'
+        read DUMMY
+    fi
     rm -f "${caminholocal}/${arqbloqueio}"
     exit $codsaida
 }
