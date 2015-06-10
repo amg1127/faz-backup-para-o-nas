@@ -101,14 +101,17 @@ if ! roda test -d "${camremot}"; then
         if roda test -d "${ultimapa}"; then
             exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
             rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
+            rodasuc touch "${camremot}"
         else
             ultimapa="`echo \"${ultimapa}\" | sed \"s/\/\.\(${maska}\)\.tmp\$/\/\1/\"`"
             if roda test -d "${ultimapa}"; then
                 if [ "`basename \"${ultimapa}\"`" == "${anomesdia}" ]; then
                     rodasuc mv -v "${ultimapa}" "${camremot}"
+                    rodasuc touch "${camremot}"
                 else
                     exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
                     rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
+                    rodasuc touch "${camremot}"
                 fi
             else
                 morre '???? Inconsistencia feia aqui... ????'
