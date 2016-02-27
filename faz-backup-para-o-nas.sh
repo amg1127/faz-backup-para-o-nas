@@ -5,7 +5,7 @@
 export hostremoto='amg1127-sala'
 export caminholocal='/home/amg1127/backups'
 export caminhoremoto='/home/amg1127/backups'
-export maxbackups=7
+export maxbackups=15
 
 ###########################################
 
