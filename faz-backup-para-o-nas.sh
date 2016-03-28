@@ -220,5 +220,14 @@ busca_temporarios | while read linha; do
 done
 
 echo ' '
+exibe '(6) Executando verificacao de encerramento...'
+roda find "${caminhoremoto}/${anomesdia}" -mindepth 1 -maxdepth 1 -type d | while read umdir; do
+    base="`basename \"${umdir}\"`"
+    if ! test -d "${caminholocal}/${base}"; then
+        exibe "Aviso: nao existe referencia de diretorio de origem para o backup de nome '${base}'!"
+    fi
+done
+
+echo ' '
 exibe ' OK! '
 sai 0
