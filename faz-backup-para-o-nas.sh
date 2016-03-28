@@ -163,8 +163,16 @@ find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; d
                     rstamp=''
                 fi
             fi
-            [ "x${bnlo}" != "x" ] && rsync -e 'ssh -o ControlPath=none' ${rstamp} -z --new-compress -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --no-whole-file --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"
-            resultado="$?"
+            if [ "x${bnlo}" != "x" ]; then
+                rsync -e 'ssh -o ControlPath=none' ${rstamp} -z --new-compress -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --no-whole-file --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"
+                resultado="$?"
+                if [ "${resultado}" -eq 24 ]; then
+                    exibe "Aviso: Ignorando falhas de transferencia por 'vanished files'..."
+                    resultado=0
+                fi
+            else
+                resultado=1
+            fi
             runscript="${localo}-postrun"
             if [ -f "${runscript}" -a -x "${runscript}" ]; then
                 exibe "  + postrun '${localo}'"
