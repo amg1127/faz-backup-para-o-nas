@@ -14,6 +14,7 @@ export arqbloqueio=".lockfile"
 export maska='[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
 set -o pipefail
 test "x${FAST}" != "x" || sleep 10
+test "x${HOSTREMOTO}" != "x" && export hostremoto="${HOSTREMOTO}"
 
 exibe () {
     echo " [`date '+%Y-%m-%d %H:%M:%S'`] $@ "
