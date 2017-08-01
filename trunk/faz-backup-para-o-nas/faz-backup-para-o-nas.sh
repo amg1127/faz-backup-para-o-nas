@@ -73,6 +73,9 @@ fi
 exibe '(1) Testando autenticacao de SSH...'
 exibe 'Aviso: O ideal eh que o SSH faca autenticacao sem a necessidade de digitar senha.'
 exibe 'Se a digitacao de senha foi necessaria, interrompa este script e use o comando "ssh-add" antes de executar este script.'
+if ! ssh-add -l; then
+    ssh-add
+fi
 if ! roda mkdir -p -m 700 "${caminhoremoto}"; then
     morre 'Impossivel autenticar-se no servidor de SSH!'
 fi
