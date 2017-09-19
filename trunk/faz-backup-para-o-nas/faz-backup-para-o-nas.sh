@@ -60,14 +60,14 @@ busca_definitivos () {
     busca_remoto -iname "${maska}"
 }
 
-if [ "x${SSH_AGENT_PID}" == "x" ]; then
-    exibe 'Agente de SSH nao foi localizado. Lancando um...'
-    exec ssh-agent $0 "$@"
-fi
-
 if [ -f "${caminholocal}/${arqbloqueio}" ]; then
     echo 'Outra instancia deste programa parece estar em execucao. Abortando...'
     exit 1
+fi
+
+if [ "x${SSH_AGENT_PID}" == "x" ]; then
+    exibe 'Agente de SSH nao foi localizado. Lancando um...'
+    exec ssh-agent $0 "$@"
 fi
 
 exibe '(1) Testando autenticacao de SSH...'
