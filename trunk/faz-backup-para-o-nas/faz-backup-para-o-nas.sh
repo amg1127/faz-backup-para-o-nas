@@ -67,7 +67,7 @@ fi
 
 if [ "x${SSH_AGENT_PID}" == "x" ]; then
     exibe 'Agente de SSH nao foi localizado. Lancando um...'
-    exec ssh-agent $0 "$@"
+    exec ssh-agent "${0}" "$@"
 fi
 
 exibe '(1) Testando autenticacao de SSH...'
