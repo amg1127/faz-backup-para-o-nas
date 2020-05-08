@@ -48,6 +48,14 @@ rodasuc () {
     fi
 }
 
+definitivo2temporario () {
+    sed -r "s/^(.*\/)?(${maska})(\/.*)?\$/\1.\2.tmp\3/"
+}
+
+temporario2definitivo () {
+    sed -r "s/^(.*\/)?\.(${maska})\.tmp(\/.*)?\$/\1\2\3/"
+}
+
 busca_remoto () {
     rodasuc find "${caminhoremoto}" -mindepth 1 -maxdepth 1 -type d "$@"
 }
@@ -58,6 +66,15 @@ busca_temporarios () {
 
 busca_definitivos () {
     busca_remoto -iname "${maska}"
+}
+
+latestLink () {
+    if roda test -e "${caminhoremoto}/latest"; then
+        rodasuc test -h "${caminhoremoto}/latest"
+    fi
+    rodasuc rm -f "${caminhoremoto}/latest"
+    latestTarget="`busca_definitivos | sort -r | head --lines=1`"
+    [ "x${latestTarget}" != 'x' ] && rodasuc ln -sv "${latestTarget}" "${caminhoremoto}/latest"
 }
 
 if [ -f "${caminholocal}/${arqbloqueio}" ]; then
@@ -83,13 +100,17 @@ fi
 echo $$ > "${caminholocal}/${arqbloqueio}"
 
 echo ' '
-exibe '(2) Verificando e removendo pastas de backup incompletas...'
-if [ "`( echo \"${caminhoremoto}/.${anomesdia}.tmp\" ; ( busca_definitivos | sed \"s/\/\(${maska}\)\$/\/.\1.tmp/\" ) ; busca_temporarios ) | sort -r | head --lines=1`" != "${caminhoremoto}/.${anomesdia}.tmp" ]; then
+exibe '(2) Verificando pastas de backup existentes...'
+camremot="`echo \"${caminhoremoto}/${anomesdia}\" | definitivo2temporario`"
+if [ "`( busca_definitivos | definitivo2temporario ; busca_temporarios ; echo "${camremot}" ) | sort -r | head --lines=1`" != "${camremot}" ]; then
     morre '???? Existe um backup que veio do futuro? ????'
 fi
 if roda test -d "${caminhoremoto}/${anomesdia}"; then
     if [ "x${FAST}" != "x" ]; then
         exibe 'Aviso: Ja foi feito backup hoje! Ele sera sobrescrito...'
+        rodasuc mv -v "${caminhoremoto}/${anomesdia}" "${camremot}"
+        rodasuc touch "${camremot}"
+        latestLink
     else
         morre 'Ja foi feito backup hoje!'
     fi
@@ -98,36 +119,15 @@ if [ "`find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | egrep '[[:spa
     morre 'Nomes de symlinks invalidos aqui na origem!'
 fi
 
-camremot="${caminhoremoto}/.${anomesdia}.tmp"
-if ! roda test -d "${camremot}"; then
-    ultimapa="`( ( busca_definitivos | sed \"s/\/\(${maska}\)\$/\/.\1.tmp/\" ) ; busca_temporarios ) | sort -r | head --lines=1`"
-    if [ "x${ultimapa}" != "x" ]; then
-        if roda test -d "${ultimapa}"; then
-            exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
-            rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
-            rodasuc touch "${camremot}"
-        else
-            ultimapa="`echo \"${ultimapa}\" | sed \"s/\/\.\(${maska}\)\.tmp\$/\/\1/\"`"
-            if roda test -d "${ultimapa}"; then
-                if [ "`basename \"${ultimapa}\"`" == "${anomesdia}" ]; then
-                    rodasuc mv -v "${ultimapa}" "${camremot}"
-                    rodasuc touch "${camremot}"
-                else
-                    exibe "  + Copiando backup '`basename \"${ultimapa}\"`' para '`basename \"${camremot}\"`'..."
-                    rodasuc cp -a -f -x -l "${ultimapa}" "${camremot}"
-                    rodasuc touch "${camremot}"
-                fi
-            else
-                morre '???? Inconsistencia feia aqui... ????'
-            fi
-        fi
-    else
-        rodasuc mkdir -pv -m 700 "${camremot}"
-    fi
-fi
+rodasuc mkdir -pv -m 700 "${camremot}"
 if ! roda test -d "${camremot}"; then
     morre 'Falha ao criar pasta para o backup de hoje! Impossivel continuar!'
 fi
+
+rsynclinkdeststemplate="`( busca_definitivos | definitivo2temporario | sed -r 's/$/D/' ; busca_temporarios | sed -r 's/$/T/' | sort -r | head --lines=5 ) | sort -r | head --lines=20 | while read localo; do
+    echo \"${localo}\" | egrep -q 'D$' && echo \"${localo}\" | sed -r 's/D$//' | temporario2definitivo
+    echo \"${localo}\" | egrep -q 'T$' && echo \"${localo}\" | sed -r 's/T$//'
+done`"
 
 echo ' '
 exibe '(3) Executando chamadas de "rsync" para fazer o backup...'
@@ -153,7 +153,7 @@ find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; d
             exibe "  + rsync '${localo}'"
             logofile="${localo}-transfer.log"
             cat /dev/null > "${logofile}"
-            rsyncmore=""
+            rsyncmore=''
             for inctest in 'in' 'ex'; do
                 patfile="${localo}-${inctest}clude.patterns"
                 if [ -f "${patfile}" ]; then
@@ -168,6 +168,9 @@ find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; d
                 fi
             fi
             if [ "x${bnlo}" != "x" ]; then
+                rsyncmore="${rsyncmore} `echo \"${rsynclinkdeststemplate}\" | while read comparedir; do
+                    echo -n \" --link-dest=\\\"${comparedir}/${bnlo}/\\\"\"
+                done`"
                 rsync -e 'ssh -o ControlPath=none' ${rstamp} -z --new-compress -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --no-whole-file --no-inplace --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"
                 resultado="$?"
                 if [ "${resultado}" -eq 24 ]; then
@@ -201,11 +204,7 @@ find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; d
 done
 [ "$?" -eq 0 ] || morre 'Abortando...'
 rodasuc mv -v "${camremot}" "${caminhoremoto}/${anomesdia}"
-if roda test -e "${caminhoremoto}/latest"; then
-    rodasuc test -h "${caminhoremoto}/latest"
-fi
-rodasuc rm -f "${caminhoremoto}/latest"
-rodasuc ln -sv "${anomesdia}" "${caminhoremoto}/latest"
+latestLink
 
 echo ' '
 exibe '(4) Removendo pastas de backup antigas...'
