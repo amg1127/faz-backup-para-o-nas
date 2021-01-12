@@ -210,16 +210,16 @@ echo ' '
 exibe '(4) Removendo pastas de backup antigas...'
 busca_definitivos | sort -r | cat -n | while read posi pname; do
     if [ "${posi}" -gt "${maxbackups}" ]; then
-        exibe "  + Removendo '${pname}'..."
-        roda rm -Rf "${pname}"
+        exibe "  + Removendo em segundo plano '${pname}'..."
+        roda rm -Rf "${pname}" & true
     fi
 done
 
 echo ' '
 exibe '(5) Removendo pastas de backup temporarias...'
 busca_temporarios | while read linha; do
-    exibe "  + Removendo '${linha}'..."
-    roda rm -Rf "${linha}"
+    exibe "  + Removendo em segundo plano '${linha}'..."
+    roda rm -Rf "${linha}" & true
 done
 
 echo ' '
