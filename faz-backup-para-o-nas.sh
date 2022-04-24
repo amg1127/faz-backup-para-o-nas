@@ -2,7 +2,7 @@
 
 # Script para fazer backup dos dados que estao no computador novo para o computador velho. Para isso, usa "rsync" sobre "SSH"...
 # CUIDADO: nao usar nomes de pasta com espaco!!!
-export hostremoto='amg1127-london'
+export hostremoto='amg1127-london.corp.andersongomes.tech'
 export caminholocal='/home/amg1127/backups'
 export caminhoremoto='/home/amg1127/backups'
 export maxbackups=15
@@ -153,11 +153,11 @@ find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; d
             exibe "  + rsync '${localo}'"
             logofile="${localo}-transfer.log"
             cat /dev/null > "${logofile}"
-            rsyncmore=''
+            rsyncmore=()
             for inctest in 'in' 'ex'; do
                 patfile="${localo}-${inctest}clude.patterns"
                 if [ -f "${patfile}" ]; then
-                    rsyncmore="${rsyncmore} --${inctest}clude-from=${patfile}"
+                    rsyncmore[${#rsyncmore[@]}]="--${inctest}clude-from=${patfile}"
                 fi
             done
             checkfile="${localo}-lastchecksumtimestamp"
@@ -168,10 +168,10 @@ find -L "${caminholocal}" -mindepth 1 -maxdepth 1 -type d | while read localo; d
                 fi
             fi
             if [ "x${bnlo}" != "x" ]; then
-                rsyncmore="${rsyncmore} `echo \"${rsynclinkdeststemplate}\" | while read comparedir; do
-                    echo -n \" --link-dest=\\\"${comparedir}/${bnlo}/\\\"\"
-                done`"
-                rsync -e 'ssh -o ControlPath=none' ${rstamp} -z --new-compress -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --no-whole-file --no-inplace --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" ${rsyncmore} "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"
+                while read comparedir; do
+                    rsyncmore[${#rsyncmore[@]}]="--link-dest=${comparedir}/${bnlo}/"
+                done <<< "${rsynclinkdeststemplate}"
+                rsync -e 'ssh -o ControlPath=none' ${rstamp} -z --new-compress -r -l -H -p -E -g -t --delete --delete-excluded --delete-before --timeout=43200 --safe-links --no-whole-file --no-inplace --log-file-format='%o %b/%l %n%L' --log-file="${logofile}" "${rsyncmore[@]}" "${localo}/" "${hostremoto}:${camremot}/${bnlo}/"
                 resultado="$?"
                 if [ "${resultado}" -eq 24 ]; then
                     exibe "Aviso: Ignorando falhas de transferencia por 'vanished files'..."
